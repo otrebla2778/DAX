@@ -1,0 +1,32 @@
+WorkingHours = 
+   VAR BusHoursStart = CALCULATE(
+                         SELECTEDVALUE(HorasLaboral[Time]),
+                         HorasLaboral[horas]="Start"
+                       ) //Tabla con las horas hábiles diarias Start "Horario de gestion 8 am a 8 pm"
+   VAR BusHoursEnd = CALCULATE(SELECTEDVALUE(HorasLaboral[Time]), HorasLaboral[horas]="End") //Tabla con las horas hábiles diarias End "Horario de gestion 8 am a 8 pm"
+   VAR BusHoursPerDay = VALUE(BusHoursEnd - BusHoursStart)*24
+   VAR ThisStartTime = GeneralData[HoraCreated] //Tabla "GeneralData"
+   VAR ThisEndTime = GeneralData[HoraClosed]
+   VAR StartDate = GeneralData[FechaIngreso]
+   VAR EndDate = GeneralData[FechaCierre]
+   VAR FirstDayElapsedTime = SWITCH(TRUE(),
+                                RELATED('Calendar'[Working Day])=0,0,
+                                ThisStartTime <= BusHoursStart,BusHoursPerDay, //secuencia editada para solucionar el problema de lógica
+                                ThisStartTime>=BusHoursEnd,0,
+                                StartDate = EndDate && ThisEndTime < BusHoursEnd,
+                                       round((ThisEndTime-ThisStartTime)*24,3),
+                                round((BusHoursEnd-ThisStartTime)*24,3)
+                              )
+   VAR LastDayElapsedTime = SWITCH(TRUE(),
+                                 LOOKUPVALUE('Calendar'[Working Day],'Calendar'[Fecha],EndDate)=0,0,
+                                 ThisEndTime >= BusHoursEnd,BusHoursPerDay, //secuencia editada para solucionar el problema de lógica
+                                 ThisEndTime<=BusHoursStart,0,
+                                 StartDate = EndDate,0,
+                                 round((ThisEndTime - BusHoursStart)*24,3)
+                             ) 
+   VAR FullWorkDays = CALCULATE(
+                         SUM('Calendar'[Working Day]),
+                         DATESBETWEEN('Calendar'[Fecha], StartDate+1,EndDate-1)
+                      )
+   VAR TotalHours = FirstDayElapsedTime + FullWorkDays*BusHoursPerDay + LastDayElapsedTime
+   RETURN TotalHours
