@@ -12,8 +12,13 @@ let
     #"Columnas quitadas1" = Table.RemoveColumns(#"Dividir columna por: transición de caracteres1",{"Source.Name.2.2"}),
     Source_Name = Table.RenameColumns(#"Columnas quitadas1",{{"Source.Name.2.1", "Source.Name"}}),
     #"Valor reemplazado" = Table.ReplaceValue(Source_Name,"{""Texto"":""M""},","",Replacer.ReplaceText,{"Column1"}),
+    #"Valor reemplazado13" = Table.ReplaceValue(#"Valor reemplazado","{""Texto"":""CUN/SN:""},{""Texto"":""",",{""Texto"":""CUN/SN",Replacer.ReplaceText,{"Column1"}),
+    #"Valor reemplazado14" = Table.ReplaceValue(#"Valor reemplazado13","{""Texto"":""CUN""},{""Texto"":""",",{""Texto"":""CUN/SN",Replacer.ReplaceText,{"Column1"}),
+    #"Valor reemplazado15" = Table.ReplaceValue(#"Valor reemplazado14","{""Texto"":""SN""},{""Texto"":""",",{""Texto"":""CUN/SN",Replacer.ReplaceText,{"Column1"}),
+    #"Valor reemplazado16" = Table.ReplaceValue(#"Valor reemplazado15","{""Texto"":""CUN:""},{""Texto"":""",",{""Texto"":""CUN/SN",Replacer.ReplaceText,{"Column1"}),
+    #"Valor reemplazado17" = Table.ReplaceValue(#"Valor reemplazado16","{""Texto"":""SN:""},{""Texto"":""",",{""Texto"":""CUN/SN",Replacer.ReplaceText,{"Column1"}),
     /*------Inicia Aislar fecha de la carta------*/
-    Fecha = Table.AddColumn(#"Valor reemplazado", "Fecha", each Text.BeforeDelimiter([Column1],"}")),
+    Fecha = Table.AddColumn(#"Valor reemplazado17", "Fecha", each Text.BeforeDelimiter([Column1],"}")),
     #"Texto recortado" = Table.TransformColumns(Fecha,{{"Fecha", Text.Trim, type text}}),
     #"Valor reemplazado1" = Table.ReplaceValue(#"Texto recortado"," D.C","",Replacer.ReplaceText,{"Fecha"}),
     #"Valor reemplazado2" = Table.ReplaceValue(#"Valor reemplazado1","[{""Texto"":""Bogotá,","",Replacer.ReplaceText,{"Fecha"}),
@@ -25,7 +30,19 @@ let
     #"Valor reemplazado5" = Table.ReplaceValue(#"Texto en minúsculas","de","",Replacer.ReplaceText,{"Fecha"}),
     #"Texto recortado2" = Table.TransformColumns(#"Valor reemplazado5",{{"Fecha", Text.Trim, type text}}),
     #"Valor reemplazado6" = Table.ReplaceValue(#"Texto recortado2"," l "," ",Replacer.ReplaceText,{"Fecha"}),
-    TipoFecha = Table.TransformColumnTypes(#"Valor reemplazado6",{{"Fecha", type date}})
-    /*------finaliza Aislar fecha de la carta------*/
+    TipoFecha = Table.TransformColumnTypes(#"Valor reemplazado6",{{"Fecha", type date}}),
+    /*------Extraccion de CUN------*/
+    ExtraccionCUN = Table.AddColumn(TipoFecha, "ExtraccionCUN", each if Text.Contains([Column1],"{""Texto"":""CUN/SN") then Text.AfterDelimiter([Column1],"{""Texto"":""CUN/SN") else if Text.Contains([Column1],"{""Texto"":""CUN") then Text.AfterDelimiter([Column1],"{""Texto"":""CUN") else if Text.Contains([Column1],"{""Texto"":""SN") then Text.AfterDelimiter([Column1],"{""Texto"":""SN") else null),
+    #"Valor reemplazado8" = Table.ReplaceValue(ExtraccionCUN,":","",Replacer.ReplaceText,{"ExtraccionCUN"}),
+    #"Valor reemplazado9" = Table.ReplaceValue(#"Valor reemplazado8","–","",Replacer.ReplaceText,{"ExtraccionCUN"}),
+    #"Texto recortado3" = Table.TransformColumns(#"Valor reemplazado9",{{"ExtraccionCUN", Text.Trim, type text}}),
+    CUN = Table.AddColumn(#"Texto recortado3", "CUN/SN", each Text.BeforeDelimiter([ExtraccionCUN],"""},{""")),
+    EliminarExtraccionCUN = Table.RemoveColumns(CUN,{"ExtraccionCUN"}),
+    #"Valor reemplazado10" = Table.ReplaceValue(EliminarExtraccionCUN,".","",Replacer.ReplaceText,{"CUN/SN"}),
+    #"Valor reemplazado11" = Table.ReplaceValue(#"Valor reemplazado10","/SN","",Replacer.ReplaceText,{"CUN/SN"}),
+    #"Valor reemplazado12" = Table.ReplaceValue(#"Valor reemplazado11","- SN ","",Replacer.ReplaceText,{"CUN/SN"}),
+    #"Texto recortado4" = Table.TransformColumns(#"Valor reemplazado12",{{"CUN/SN", Text.Trim, type text}}),
+    #"Columnas con nombre cambiado" = Table.RenameColumns(#"Texto recortado4",{{"Column1", "TextoCarta"}}),
+    #"Columnas reordenadas" = Table.ReorderColumns(#"Columnas con nombre cambiado",{"Source.Name", "Fecha", "CUN/SN", "TextoCarta"})
 in
-    TipoFecha
+    #"Columnas reordenadas"
