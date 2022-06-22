@@ -43,6 +43,17 @@ let
     #"Valor reemplazado12" = Table.ReplaceValue(#"Valor reemplazado11","- SN ","",Replacer.ReplaceText,{"CUN/SN"}),
     #"Texto recortado4" = Table.TransformColumns(#"Valor reemplazado12",{{"CUN/SN", Text.Trim, type text}}),
     #"Columnas con nombre cambiado" = Table.RenameColumns(#"Texto recortado4",{{"Column1", "TextoCarta"}}),
-    #"Columnas reordenadas" = Table.ReorderColumns(#"Columnas con nombre cambiado",{"Source.Name", "Fecha", "CUN/SN", "TextoCarta"})
+    /*------Ordenamos las columnas------*/
+    OrdenColumnas = Table.ReorderColumns(#"Columnas con nombre cambiado",{"Source.Name", "Fecha", "CUN/SN", "TextoCarta"}),
+    /*------Se compara cun nom file vs cun carta------*/
+    CompararCUN = Table.AddColumn(OrdenColumnas, "CUN_Vs_CUNFile", each if [#"CUN/SN"] = [Source.Name] then 1 else 0),
+    #"Columnas reordenadas" = Table.ReorderColumns(CompararCUN,{"Source.Name", "Fecha", "CUN/SN", "CUN_Vs_CUNFile", "TextoCarta"}),
+    #"Tipo cambiado1" = Table.TransformColumnTypes(#"Columnas reordenadas",{{"CUN_Vs_CUNFile", Int64.Type}}),
+    TextoCartaClean = Table.DuplicateColumn(#"Tipo cambiado1", "TextoCarta", "TextoCarta - Copia"),
+    #"Columnas con nombre cambiado2" = Table.RenameColumns(TextoCartaClean,{{"TextoCarta - Copia", "TextoCarta - Clean"}}),
+    /*------Limpiar texto de la carta------*/
+    #"Valor reemplazado18" = Table.ReplaceValue(#"Columnas con nombre cambiado2","[{""Texto"":""","",Replacer.ReplaceText,{"TextoCarta - Clean"}),
+    #"Valor reemplazado19" = Table.ReplaceValue(#"Valor reemplazado18","""},{""Texto"":"""," ",Replacer.ReplaceText,{"TextoCarta - Clean"}),
+    #"Valor reemplazado20" = Table.ReplaceValue(#"Valor reemplazado19","""}]"," ",Replacer.ReplaceText,{"TextoCarta - Clean"})
 in
-    #"Columnas reordenadas"
+    #"Valor reemplazado20"
