@@ -1,0 +1,19 @@
+let
+    Origen = SharePoint.Files("https://telefonicacorp-my.sharepoint.com/personal/carlos_cuta_telefonica_com", [ApiVersion = 15]),
+    #"Filas filtradas" = Table.SelectRows(Origen, each Text.Contains([Name], "Cartas_PQR_")),
+    #"Archivos ocultos filtrados1" = Table.SelectRows(#"Filas filtradas", each [Attributes]?[Hidden]? <> true),
+    #"Invocar función personalizada1" = Table.AddColumn(#"Archivos ocultos filtrados1", "Transformar archivo (2)", each #"Transformar archivo (2)"([Content])),
+    #"Columnas con nombre cambiado1" = Table.RenameColumns(#"Invocar función personalizada1", {"Name", "Source.Name"}),
+    #"Otras columnas quitadas1" = Table.SelectColumns(#"Columnas con nombre cambiado1", {"Source.Name", "Transformar archivo (2)"}),
+    #"Columna de tabla expandida1" = Table.ExpandTableColumn(#"Otras columnas quitadas1", "Transformar archivo (2)", Table.ColumnNames(#"Transformar archivo (2)"(#"Archivo de ejemplo (2)"))),
+    #"Tipo cambiado" = Table.TransformColumnTypes(#"Columna de tabla expandida1",{{"Source.Name", type text}, {"Column1", type text}}),
+    #"Dividir columna por: transición de caracteres" = Table.SplitColumn(#"Tipo cambiado", "Source.Name", Splitter.SplitTextByCharacterTransition((c) => not List.Contains({"0".."9"}, c), {"0".."9"}), {"Source.Name.1", "Source.Name.2", "Source.Name.3"}),
+    #"Dividir columna por: transición de caracteres1" = Table.SplitColumn(#"Dividir columna por: transición de caracteres", "Source.Name.2", Splitter.SplitTextByCharacterTransition({"0".."9"}, (c) => not List.Contains({"0".."9"}, c)), {"Source.Name.2.1", "Source.Name.2.2"}),
+    #"Columnas quitadas" = Table.RemoveColumns(#"Dividir columna por: transición de caracteres1",{"Source.Name.2.2", "Source.Name.3", "Source.Name.1"}),
+    #"Columnas con nombre cambiado" = Table.RenameColumns(#"Columnas quitadas",{{"Source.Name.2.1", "Source.Name"}}),
+    #"Valor reemplazado" = Table.ReplaceValue(#"Columnas con nombre cambiado","{""Texto"":""M""},","",Replacer.ReplaceText,{"Column1"}),
+    Fecha = Table.AddColumn(#"Valor reemplazado", "Personalizado", each Text.BeforeDelimiter([Column1],"}")),
+    #"Columnas con nombre cambiado2" = Table.RenameColumns(Fecha,{{"Personalizado", "Fecha"}}),
+    #"Valor reemplazado1" = Table.ReplaceValue(#"Columnas con nombre cambiado2","[{""Texto"":""","",Replacer.ReplaceText,{"Fecha"})
+in
+    #"Valor reemplazado1"
