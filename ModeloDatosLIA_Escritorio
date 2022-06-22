@@ -12,6 +12,20 @@ let
     #"Columnas quitadas1" = Table.RemoveColumns(#"Dividir columna por: transición de caracteres1",{"Source.Name.2.2"}),
     Source_Name = Table.RenameColumns(#"Columnas quitadas1",{{"Source.Name.2.1", "Source.Name"}}),
     #"Valor reemplazado" = Table.ReplaceValue(Source_Name,"{""Texto"":""M""},","",Replacer.ReplaceText,{"Column1"}),
-    Fecha = Table.AddColumn(#"Valor reemplazado", "Fecha", each Text.BeforeDelimiter([Column1],"}"))
+    /*------Inicia Aislar fecha de la carta------*/
+    Fecha = Table.AddColumn(#"Valor reemplazado", "Fecha", each Text.BeforeDelimiter([Column1],"}")),
+    #"Texto recortado" = Table.TransformColumns(Fecha,{{"Fecha", Text.Trim, type text}}),
+    #"Valor reemplazado1" = Table.ReplaceValue(#"Texto recortado"," D.C","",Replacer.ReplaceText,{"Fecha"}),
+    #"Valor reemplazado2" = Table.ReplaceValue(#"Valor reemplazado1","[{""Texto"":""Bogotá,","",Replacer.ReplaceText,{"Fecha"}),
+    #"Valor reemplazado7" = Table.ReplaceValue(#"Valor reemplazado2","[{""Texto"":""Bogotá ","",Replacer.ReplaceText,{"Fecha"}),
+    #"Texto recortado1" = Table.TransformColumns(#"Valor reemplazado7",{{"Fecha", Text.Trim, type text}}),
+    #"Valor reemplazado3" = Table.ReplaceValue(#"Texto recortado1","""","",Replacer.ReplaceText,{"Fecha"}),
+    #"Valor reemplazado4" = Table.ReplaceValue(#"Valor reemplazado3",".","",Replacer.ReplaceText,{"Fecha"}),
+    #"Texto en minúsculas" = Table.TransformColumns(#"Valor reemplazado4",{{"Fecha", Text.Lower, type text}}),
+    #"Valor reemplazado5" = Table.ReplaceValue(#"Texto en minúsculas","de","",Replacer.ReplaceText,{"Fecha"}),
+    #"Texto recortado2" = Table.TransformColumns(#"Valor reemplazado5",{{"Fecha", Text.Trim, type text}}),
+    #"Valor reemplazado6" = Table.ReplaceValue(#"Texto recortado2"," l "," ",Replacer.ReplaceText,{"Fecha"}),
+    TipoFecha = Table.TransformColumnTypes(#"Valor reemplazado6",{{"Fecha", type date}})
+    /*------finaliza Aislar fecha de la carta------*/
 in
-    Fecha
+    TipoFecha
